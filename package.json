@@ -1,0 +1,30 @@
+{
+  "name": "mini-link-authentication",
+  "version": "1.0.0",
+  "description": "This is another service to handle authentication",
+  "main": "server.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node build/src/server.js",
+    "dev": "nodemon src/server.ts"
+  },
+  "keywords": [
+    "auth",
+    "JWT",
+    "token",
+    "login",
+    "signin"
+  ],
+  "author": "orashus",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "fastify": "^4.24.3",
+    "nodemon": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.9",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}
