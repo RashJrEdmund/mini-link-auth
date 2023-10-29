@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const PORT = 5000;
+const PORT = process.env.PORT as unknown as number || 5000; // 😎
 
 export {
     PORT,
