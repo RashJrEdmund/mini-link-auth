@@ -1,6 +1,6 @@
 import fastify from "fastify";
-import { PORT } from "./services/contants"
-import custom_logger from "./extra/custom_logger";
+import { HOST, PORT } from "./services/contants"
+import custom_logger from "./services/extra/custom_logger";
 import { index_router } from "./routes";
 
 try {
@@ -12,7 +12,7 @@ try {
     //     return "hello fastify ts"
     // });
 
-    server.listen({ port: PORT }, (err, address) => {
+    server.listen({ host: HOST, port: PORT }, (err, address) => {
         if (err) {
             server.log.error(err);
             process.exit(1);
