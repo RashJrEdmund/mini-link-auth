@@ -5,7 +5,8 @@
   "main": "server.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "serve": "node build/src/server.js",
+    "serve:prodmode": "node src/server.js",
+    "serve:devmode": "node build/src/server.js",
     "dev": "nodemon src/server.ts"
   },
   "keywords": [
