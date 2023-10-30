@@ -1,16 +1,12 @@
 import fastify from "fastify";
 import { HOST, PORT } from "./services/contants"
-import custom_logger from "./services/extra/custom_logger";
-import { index_router } from "./routes";
+import custom_logger from "./extra/custom_logger";
+import registerRoutes from "./fastify/registerRoutes";
 
 try {
     const server = fastify();
 
-    server.register(index_router, { prefix: "/" });
-
-    // server.get("/", (req, reply) => {
-    //     return "hello fastify ts"
-    // });
+    registerRoutes(server); // where routes have been registered and prefixed;
 
     server.listen({ host: HOST, port: PORT }, (err, address) => {
         if (err) {

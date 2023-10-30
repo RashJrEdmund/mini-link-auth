@@ -1,1 +1,0 @@
-export { default as index_router } from "./main";
