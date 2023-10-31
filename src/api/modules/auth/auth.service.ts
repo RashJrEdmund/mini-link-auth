@@ -21,11 +21,13 @@ export default class AUTH_SERVICE {
     }
 
     static getCurrentUser = async (token: string) => {
-        const current_user = AUTH_SERVICE.verifyUserToken(token);
+        const bearer = AUTH_SERVICE.verifyUserToken(token);
 
-        console.log({ current_user });
+        // space for more
 
-        return current_user;
+        console.log({ bearer });
+
+        return bearer;
     }
 
     static loginWithEmailPassword = async (email: string, password: string) => {

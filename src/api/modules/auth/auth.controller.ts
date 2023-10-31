@@ -2,7 +2,7 @@ import REQ_NOT_FOUND_ERROS from "../../../extra/REQ_ERROR";
 import { createFromBody } from "../../../extra/functions";
 import USER_SERVICE from "../user/user.service";
 import AUTH_SERVICE from "./auth.service";
-import { RouteHandlerMethod } from "fastify";
+import { FastifyReply, FastifyRequest, RouteHandlerMethod } from "fastify";
 
 const ERR_MESSAGE = new REQ_NOT_FOUND_ERROS("USER");
 
@@ -56,9 +56,6 @@ export class AUTH_CONTROLLER {
     static LOGIN: RouteHandlerMethod = async (req, reply) => {
         const body: any = req.body;
 
-        const accumulator: any = {};
-        accumulator.body = body;
-
         if (!body) return reply.code(404).send({
             status: 404,
             data: null,
@@ -83,11 +80,9 @@ export class AUTH_CONTROLLER {
                 message: REQ_NOT_FOUND_ERROS.INCORRECT_EMAIL_OR_PASSWORD(),
             });
 
-            accumulator.user_and_token;
-
             return reply.code(404).send({
                 status: 200,
-                data: { ...user_and_token, accumulator },
+                data: { ...user_and_token },
                 message: 'SUCCESS',
             });
         } catch (er: any) {
@@ -102,7 +97,7 @@ export class AUTH_CONTROLLER {
     static CURRENT_USER: RouteHandlerMethod = async (req, reply) => {
         const headers = req.headers;
         const authoraztion = headers["Authorization"] as string;
-        return reply.code(200).send({ message: "getting user accout", authoraztion });
+        // return reply.code(200).send({ message: "getting user accout", authoraztion });
 
         const token = authoraztion?.split(" ").pop() || "";
 
@@ -115,17 +110,17 @@ export class AUTH_CONTROLLER {
                 message: REQ_NOT_FOUND_ERROS.MISSING_TOKEN(),
             });
 
-            const bearer = await AUTH_SERVICE.verifyUserToken(token);
+            const current_user = await AUTH_SERVICE.getCurrentUser(token);
 
-            if (!bearer) return reply.code(401).send({
+            if (!current_user) return reply.code(401).send({
                 status: 401,
                 data: null,
                 message: REQ_NOT_FOUND_ERROS.BEAER_NOT_FOUND(),
             });
 
-            return reply.code(404).send({
+            return reply.code(200).send({
                 status: 200,
-                data: { user: bearer },
+                data: { user: current_user },
                 message: 'SUCCESS',
             });
         } catch (er: any) {
@@ -135,5 +130,9 @@ export class AUTH_CONTROLLER {
                 message: er?.body?.message ?? ERR_MESSAGE.AN_ERROR_OCCURED(),
             });
         }
+    }
+
+    static FORGOT_PASSWORD: RouteHandlerMethod = async (req: FastifyRequest, reply: FastifyReply)  => {
+        return reply.code(200).send("retrieving account"); // continue reading https://blog.logrocket.com/implementing-secure-password-reset-node-js/
     }
 }
