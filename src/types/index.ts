@@ -1,3 +1,5 @@
+import { ObjectId } from "mongodb";
+
 export type LINK_OBJ = {
     _id?: string;
     user_id: string; // null for not logged in users
@@ -11,7 +13,7 @@ export type LINK_OBJ = {
 };
 
 export type USER = {
-    _id?: string, // there's sposed to be a password field
+    _id?: ObjectId, // there's sposed to be a password field
     username: string,
     email: string,
     password: string,

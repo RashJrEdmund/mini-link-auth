@@ -1,50 +1,23 @@
 import USER_REPO from "./user.repo";
-import { createObjectId } from "../../../services/utils";
-import { BCRYPT } from "../../../extra/validation";
-import REQ_NOT_FOUND_ERROS from "../../../extra/REQ_ERROR";
+import { createObjectId, validateEmail } from "../../../services/utils";
 import { USER } from "../../../types";
-
-const ERR_MESSAGE = new REQ_NOT_FOUND_ERROS("USER");
+import { OptionalId } from "mongodb";
 
 export default class USER_SERVICE {
     static getAllUsers = async () => {
-        return USER_REPO.getAllUsers();
+        return USER_REPO.getAll();
     }
 
-    static getById = (_id: string) => {
-        return USER_REPO.getById(createObjectId(_id));
+    static getById = (_id: any) => {
+        return USER_REPO.getById(_id).then((res: any) => res._doc);
     }
 
     static getByEmail = (email: string) => {
         return USER_REPO.getByEmail(email);
     }
 
-    static createUser = async (user: USER) => {
-        try {
-            const { email } = user;
-
-            const prev_user = await this.getByEmail(email);
-
-            if (prev_user) return {
-                status: 401,
-                data: null,
-                message: ERR_MESSAGE.FIELD_ALREADY_EXITS("email"),
-            };
-
-            const password_hash = await BCRYPT.hash(user.password); // returns the password hash
-
-            const _id = createObjectId();
-
-            await USER_REPO.createUser({
-                ...user,
-                _id,
-                password: password_hash,
-            });
-
-            return this.getById(_id.toString());
-        } catch (er: any) {
-            throw er
-        }
+    static createUser = (user: OptionalId<USER>) => {
+        return USER_REPO.createUser(user);
     }
 
     static editUser = async (_id: string, user: USER) => {

@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { auth_router, index_router, user_router } from "../api/routes";
 
-const API_PREFIX: string = "/api/vi";
+const API_PREFIX: string = "/api/v1";
 
 export default (server: FastifyInstance) => {
     server.register(index_router, { prefix: "/" });

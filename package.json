@@ -28,6 +28,8 @@
     "nodemon": "^3.0.1"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.4",
     "@types/mongoose": "^5.11.97",
     "@types/node": "^20.8.9",
     "mongoose": "^7.6.3",

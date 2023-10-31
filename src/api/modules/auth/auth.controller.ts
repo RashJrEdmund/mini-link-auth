@@ -8,7 +8,6 @@ const ERR_MESSAGE = new REQ_NOT_FOUND_ERROS("USER");
 
 export class AUTH_CONTROLLER {
     static CREATE_USER_ACCOUNT: RouteHandlerMethod = async (req, reply) => {
-        return reply.code(200).send("creating user accout");
         const body = req.body;
 
         if (!body) return reply.code(404).send({
@@ -18,26 +17,29 @@ export class AUTH_CONTROLLER {
         });
 
         try {
-            const { status, new_user } = createFromBody(body, { _type: "USER", _strict: true }); // strict mode is recomended for creation
+            const {
+                status: _status, // giving aliases to avoid naming conflicts below
+                new_user,
+                message: _message
+            } = createFromBody(body, { _type: "USER", _strict: true }); // strict mode is recomended for creation
 
-            if (status !== 200 || !new_user) return reply.code(404).send({
-                status: 404,
+            if (_status !== 200 || !new_user) return reply.code(_status).send({
+                status: _status,
+                message: _message,
                 data: null,
-                message: ERR_MESSAGE.MISSING_DETAILS()
             });
 
-            const user = await USER_SERVICE.createUser(new_user);
+            const { data: user, message, status } = await AUTH_SERVICE.signUp(new_user);
 
-            if (!user) return reply.code(404).send({
-                status: 404,
+            if (!user || status !== 200) return reply.code(status).send({
+                status,
+                message,
                 data: null,
-                message: ERR_MESSAGE.NOT_FOUND(),
             });
-
 
             const user_and_token = AUTH_SERVICE.signUserToken(user);
 
-            return reply.code(404).send({
+            return reply.code(200).send({
                 status: 200,
                 data: { ...user_and_token },
                 message: 'SUCCESS',
@@ -52,8 +54,7 @@ export class AUTH_CONTROLLER {
     }
 
     static LOGIN: RouteHandlerMethod = async (req, reply) => {
-        const body = req.body;
-        return reply.code(200).send("login into user accout");
+        const body: any = req.body;
 
         const accumulator: any = {};
         accumulator.body = body;
@@ -65,21 +66,21 @@ export class AUTH_CONTROLLER {
         });
 
         try {
-            const { status, new_user: user } = createFromBody(body, { _type: "USER", _strict: false }); // strict mode is recomended for creation
-            accumulator.createFromBody = { status, new_user: user };
+            const email = body.email;
+            const password = body.password;
 
-            if (status !== 200 || !user?.email || !user?.password) return reply.code(404).send({
+            if (!email || !password)return reply.code(404).send({
                 status: 404,
                 data: null,
                 message: ERR_MESSAGE.MISSING_DETAILS()
             });
 
-            const user_and_token = await AUTH_SERVICE.loginWithEmailPassword(user.email, user.password);
+            const user_and_token = await AUTH_SERVICE.loginWithEmailPassword(email, password);
 
             if (!user_and_token) return reply.code(401).send({
                 status: 401,
-                data: REQ_NOT_FOUND_ERROS.INCORRECT_EMAIL_OR_PASSWORD(),
-                message: 'SUCCESS',
+                data: null,
+                message: REQ_NOT_FOUND_ERROS.INCORRECT_EMAIL_OR_PASSWORD(),
             });
 
             accumulator.user_and_token;
@@ -103,7 +104,7 @@ export class AUTH_CONTROLLER {
         const authoraztion = headers["Authorization"] as string;
         return reply.code(200).send({ message: "getting user accout", authoraztion });
 
-        const token = authoraztion?.split(" ").pop();
+        const token = authoraztion?.split(" ").pop() || "";
 
         console.log("headaers", headers);
 

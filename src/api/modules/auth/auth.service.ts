@@ -1,83 +1,82 @@
 import { BCRYPT, TOKEN_SERVICE } from "../../../extra/validation";
 import type { WithId } from "mongodb";
 import USER_SERVICE from "../user/user.service";
-import { createObjectId, removeObjectKeys } from "../../../services/utils";
-import AUTH_REPO from "./auth.repo";
+import { createObjectId, removeObjectKeys, validateEmail } from "../../../services/utils";
 import { USER } from "../../../types";
-import REQ_NOT_FOUND_ERROS from "../../../extra/REQ_ERROR";
 
-const ERR_MESSAGE = new REQ_NOT_FOUND_ERROS("USER");
+interface IAUTH_SIGNTOKEN {
+    (user: WithId<Document>): { token: string, user: USER }
+}
 
 export default class AUTH_SERVICE {
-    static getById = (_id: string) => {
-        return AUTH_REPO.getById(createObjectId(_id));
-    }
-
-    static getByEmail = (email: string) => {
-        return AUTH_REPO.getByEmail(email);
-    }
-
-    static signUserToken = (user: WithId<Document>) => {
+    static signUserToken: IAUTH_SIGNTOKEN = (user) => {
         const token = TOKEN_SERVICE.sign(user);
 
-        return { token, user };
+        console.log("auth sign token", user)
+        return { token, user: user as any as USER }; // 😁
     }
 
     static verifyUserToken = async (token: string) => {
-        return TOKEN_SERVICE.verify(token); // returns the token bearer;
+        return TOKEN_SERVICE.verify(token); // returns the token bearer will be needed to get the currently logged in user
+    }
+
+    static getCurrentUser = async (token: string) => {
+        const current_user = AUTH_SERVICE.verifyUserToken(token);
+
+        console.log({ current_user });
+
+        return current_user;
     }
 
     static loginWithEmailPassword = async (email: string, password: string) => {
-        let prev_user = await USER_SERVICE.getByEmail(email);
+        const prev_user = await USER_SERVICE.getByEmail(email);
 
         if (!prev_user) return null; // will handle as REQ_NOT_FOUND_ERROS.INCORRECT_EMAIL_OR_PASSWORD();
 
-        const match = await BCRYPT.compare(password, prev_user.password);
+        const match = await BCRYPT.compare(password, prev_user.password as string);
 
         if (!match) return null // will also handle as line 22;
 
-        prev_user = removeObjectKeys(prev_user, ["password"]) // removing the password field;
-        // const token =  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NTBkYmE3ZGVhMjc4YWNkMjg1NWQwOGQiLCJ1c2VybmFtZSI6InBvc3QgbWFuIDEiLCJlbWFpbCI6InBvc3QgbWFuIDFAZ21haWwuY29tIiwicHJvZmlsZV9waWMiOiIiLCJpc19wcmVtaXVtX3VzZXIiOmZhbHNlLCJjcmVhdGVkQXQiOiJXZWQgU2VwIDEzIDIwMjMiLCJiZWFyZXJfaWQiOiI2NTBkYmE3ZGVhMjc4YWNkMjg1NWQwOGQiLCJpYXQiOjE2OTU0ODg0OTcsImV4cCI6MTY5NTQ5MjA5N30.wx3MTz8e1CPUzHNlKkyodD5tfrQQFJEWu7iwOJe-MWI"
-        // return {token, user: prev_user}
-
-        return this.signUserToken(prev_user);
+        return this.signUserToken(prev_user as any);
     }
 
-    static createUser = async (user: USER) => {
+    static signUp = async (user: USER) => {
         try {
             const { email } = user;
 
-            const prev_user = await this.getByEmail(email);
+            if (!email || !validateEmail(email)) return {
+                status: 401,
+                data: null,
+                message: "INVALID EMAIL",
+            };
+
+            const prev_user = await USER_SERVICE.getByEmail(email);
 
             if (prev_user) return {
                 status: 401,
                 data: null,
-                message: ERR_MESSAGE.FIELD_ALREADY_EXITS("email"),
+                message: "USER ALREADY EXITS",
             };
 
-            const password_hash = await BCRYPT.hash(user.password); // returns the password hash
+            const password_hash = await BCRYPT.hash(user.password); // "was getting a data must be a string or buffer" password error from BCRYP.has
 
-            const _id = createObjectId();
+            const _id = createObjectId(); // a new user_id
 
-            await AUTH_REPO.createUser({
+            await USER_SERVICE.createUser({
                 ...user,
                 _id,
                 password: password_hash,
             });
 
-            return this.getById(_id.toString());
+            const new_user = await USER_SERVICE.getById(_id.toString());
+
+            return {
+                status: 200,
+                data: { ...new_user },
+                message: "SUCESS",
+            }
         } catch (er: any) {
-            throw er;
+            throw er
         }
-    }
-
-    static editUser = async (_id: string, user: USER) => {
-        await AUTH_REPO.editUser(createObjectId(_id), user);
-
-        return this.getById(_id);
-    }
-
-    static delete = (_id: string) => {
-        return AUTH_REPO.delete(createObjectId(_id));
     }
 }

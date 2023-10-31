@@ -1,13 +1,13 @@
-import type { LINK_OBJ, USER, VISITOR_OBJ } from "$services/types";
-import { error } from "@sveltejs/kit";
+import type { LINK_OBJ, USER, VISITOR_OBJ } from "../types";
 import REQ_NOT_FOUND_ERROS from "./REQ_ERROR";
-import { MIN_VISITOR_CHANCES } from "../../utils/constants";
+// import { MIN_VISITOR_CHANCES } from "../../utils/constants";
 
 type CREATE_FROM_BODY = (body: any, options: {
     _type: "USER" | "URL" | "VISITOR",
     _strict?: boolean, // strict mode is recomended for when creating. and not editting
 }) => {
     status: number,
+    message: string,
     new_user?: USER,
     new_url?: LINK_OBJ,
     new_visitor?: VISITOR_OBJ
@@ -18,9 +18,10 @@ export const createFromBody: CREATE_FROM_BODY = (body, options) => {
         const ERR_MESSAGE = new REQ_NOT_FOUND_ERROS("USER");
 
         if (options._strict) { // strict mode is good for creation
-            if (!(body.username && body.email && body.password)) throw error(401, {
+            if (!(body.username && body.email && body.password)) return {
+                status: 401,
                 message: ERR_MESSAGE.MISSING_DETAILS()
-            });
+            };
 
             const new_user: USER = {
                 username: body.username,
@@ -31,63 +32,96 @@ export const createFromBody: CREATE_FROM_BODY = (body, options) => {
                 createdAt: body?.createdAt ?? new Date().toDateString(),
             }
 
-            return { status: 200, new_user };
+            return {
+                message: "SUCCESS",
+                status: 200,
+                new_user
+            };
         }
 
-        const accepted_user_keys: (keyof USER)[] = ["_id", "username", "email", "profile_pic", "is_premium_user", "createdAt", "updatedAt", "password"];
+        const accepted_user_keys: (keyof USER)[] = [
+            "_id",
+            "username",
+            "email",
+            "profile_pic",
+            "is_premium_user",
+            "createdAt",
+            "updatedAt",
+            "password"
+        ];
 
         let new_user: any = {};
 
         for (const key in body) {
-            if (accepted_user_keys.includes(key)) new_user = { ...new_user, [key]: body[key] };
-            else throw error(401, {
+            if ((accepted_user_keys as string[]).includes(key)) new_user = { ...new_user, [key]: body[key] };
+            else return {
+                status: 401,
                 message: ERR_MESSAGE.UNRECOGNIZED_FIELD(key),
-            });
+            };
         }
 
-        return { status: 200, new_user };
+        return {
+            message: "SUCCESS",
+            status: 200,
+            new_user
+        };
     }
 
-    if (options._type === "VISITOR") {
-        const ERR_MESSAGE = new REQ_NOT_FOUND_ERROS("VISITOR");
+    // if (options._type === "VISITOR") {
+    //     const ERR_MESSAGE = new REQ_NOT_FOUND_ERROS("VISITOR");
 
-        if (options._strict) { // strict mode is good for creation
-            if (!body.visitor_id) throw error(401, {
-                message: ERR_MESSAGE.MISSING_DETAILS()
-            });
+    //     if (options._strict) { // strict mode is good for creation
+    //         if (!body.visitor_id) return {
+    //             status: 401,
+    //             message: ERR_MESSAGE.MISSING_DETAILS()
+    //         };
 
-            const new_visitor: VISITOR_OBJ = {
-                visitor_id: body.visitor_id,
-                user_id: "",
-                links: body.links || [],
-                chances: MIN_VISITOR_CHANCES,
-                createdAt: body?.createdAt ?? new Date().toDateString(),
-            }
+    //         const new_visitor: VISITOR_OBJ = {
+    //             visitor_id: body.visitor_id,
+    //             user_id: "",
+    //             links: body.links || [],
+    //             chances: MIN_VISITOR_CHANCES,
+    //             createdAt: body?.createdAt ?? new Date().toDateString(),
+    //         }
 
-            return { status: 200, new_visitor };
-        }
+    //         return { status: 200, new_visitor };
+    //     }
 
-        const accepted_visitor_keys: (keyof VISITOR_OBJ)[] = ["_id", "chances", "visitor_id", "user_id", "links", "createdAt", "updatedAt"];
+    //     const accepted_visitor_keys: (keyof VISITOR_OBJ)[] = [
+    //         "_id",
+    //         "chances",
+    //         "visitor_id",
+    //         "user_id",
+    //         "links",
+    //         "createdAt",
+    //         "updatedAt"
+    //     ];
 
-        let new_visitor: any = {};
+    //     let new_visitor: any = {};
 
-        for (const key in body) {
-            if (accepted_visitor_keys.includes(key)) new_visitor = { ...new_visitor, [key]: body[key] };
-            else throw error(401, {
-                message: ERR_MESSAGE.UNRECOGNIZED_FIELD(key),
-            });
-        }
+    //     for (const key in body) {
+    //         if ((accepted_visitor_keys as string[]).includes(key)) new_visitor = { ...new_visitor, [key]: body[key] };
+    //         else return {
+    //             status: 401,
+    //             message: ERR_MESSAGE.UNRECOGNIZED_FIELD(key),
+    //         };
+    //     }
 
-        return { status: 200, new_visitor };
-    }
+    //     return {
+    //         message: "SUCCESS",
+    //         status: 200,
+    //         new_visitor
+    //     };
+    // }
 
     if (options._type === "URL") {
         const ERR_MESSAGE = new REQ_NOT_FOUND_ERROS("URL");
 
         if (options._strict) { // strict mode is good for creation
-            if (!((body.user_id || body.visitor_id) && body.original)) throw error(401, {
+            if (!((body.user_id || body.visitor_id) && body.original)) return {
+                status: 401,
                 message: ERR_MESSAGE.MISSING_DETAILS()
-            });
+            };
 
             const new_url: LINK_OBJ = {
                 user_id: body.user_id || "",
@@ -98,24 +132,42 @@ export const createFromBody: CREATE_FROM_BODY = (body, options) => {
                 alias: body.alias ?? "",
             }
 
-            return { status: 200, new_url };
+            return {
+                message: "SUCCESS",
+                status: 200,
+                new_url,
+            };
         }
 
-        const accepted_url_keys: (keyof LINK_OBJ)[] = ["user_id", "visitor_id", "short_link", "original", "clicks", "status", "alias"];
+        const accepted_url_keys: (keyof LINK_OBJ)[] = [
+            "user_id",
+            "visitor_id",
+            "short_link",
+            "original",
+            "clicks",
+            "status",
+            "alias"
+        ];
 
         let new_url: any = {};
 
         for (const key in body) {
-            if (accepted_url_keys.includes(key)) new_url = { ...new_url, [key]: body[key] };
-            else throw error(401, {
+            if ((accepted_url_keys as string[]).includes(key)) new_url = { ...new_url, [key]: body[key] };
+            else return {
+                status: 401,
                 message: ERR_MESSAGE.UNRECOGNIZED_FIELD(key),
-            });
+            };
         }
 
-        return { status: 200, new_url };
+        return {
+            message: "SUCCESS",
+            status: 200,
+            new_url,
+        };
     }
 
-    return error(401, {
+    return {
+        status: 401,
         message: new REQ_NOT_FOUND_ERROS("USER").UNRECOGNIZED_ENTITY(),
-    });
+    };
 }

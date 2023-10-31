@@ -1,20 +1,21 @@
 import { USERS } from "../../../db/schemas";
 import type { ObjectId, OptionalId } from "mongodb";
+import { USER } from "../../../types";
 
 export default class USER_REPO {
-    static getAllUsers = () => {
+    static getAll = () => {
         return USERS.find({});
     }
 
     static getById = (_id: ObjectId) => {
-        return USERS.findOne({ _id });
+        return USERS.findById(_id); // mongo _id has type ObjectId
     }
 
     static getByEmail = (email: string) => {
         return USERS.findOne({ email });
     }
 
-    static createUser = (user: OptionalId<any>) => {
+    static createUser = (user: OptionalId<USER>) => {
         return USERS.create(user);
     }
 
@@ -25,4 +26,4 @@ export default class USER_REPO {
     static delete = (_id: ObjectId) => {
         return USERS.findOneAndDelete({ _id });
     }
-}
+};

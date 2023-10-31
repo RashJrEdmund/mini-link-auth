@@ -6,6 +6,13 @@ type STRINGIFY = (obj: any, options?: {
     status?: number,
 }) => string;
 
+type ValidateEmailType = (email: string) => boolean;
+
+export const validateEmail: ValidateEmailType = (email) => {
+    const regex = /^([A-Za-z\d.-]+)@([A-Za-z\d-]+).([A-Za-z]{2,6})(\.[A-Za-z]{2,6}) ?$/;
+    return regex.test(email);
+}
+
 export const stringifyData: STRINGIFY = (obj: any, options = { _spacing: 4, status: 200 }) => {
     return JSON.stringify({ data: obj, status: options.status }, null, options._spacing);
 }
