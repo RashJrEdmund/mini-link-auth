@@ -1,12 +1,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
  
-import { JWT_PRIVATE_KEY, SALT_ROUNDS, TOKEN_EXPIRERY_TIME } from "../../utils/constants";
+import { JWT_PRIVATE_KEY, SALT_ROUNDS, TOKEN_EXPIRERY_TIME } from "../services/contants";
 import type { WithId } from "mongodb";
+import { USER } from "../types";
 
 export class BCRYPT {
     static hash = async (password: string) => {
-        return bcrypt.hash(password, SALT_ROUNDS);
+        return bcrypt.hash(`${password}`, +SALT_ROUNDS);
     }
 
     static compare = async (_plain_password: string, prev_hash: string) => {
@@ -15,7 +16,7 @@ export class BCRYPT {
 }
 
 export class TOKEN_SERVICE {
-    static sign = (_user: WithId<Document>) => {
+    static sign = (_user: WithId<USER>) => {
         return jwt.sign(
             { ..._user, bearer_id: _user._id },
             JWT_PRIVATE_KEY,

@@ -6,7 +6,7 @@ const API_PREFIX: string = "/api/v1";
 export default (server: FastifyInstance) => {
     server.register(index_router, { prefix: "/" });
 
-    server.register(auth_router, { prefix: `${API_PREFIX}/auth` });
+    server.register(auth_router, { prefix: `${API_PREFIX}/auth` }); // main focus is here
 
     server.register(user_router, { prefix: `${API_PREFIX}/users` });
 }

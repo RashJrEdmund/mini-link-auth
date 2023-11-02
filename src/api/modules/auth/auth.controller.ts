@@ -83,7 +83,7 @@ export class AUTH_CONTROLLER {
             return reply.code(404).send({
                 status: 200,
                 data: { ...user_and_token },
-                message: 'SUCCESS',
+                message: 'USER LOGGED IN',
             });
         } catch (er: any) {
             return reply.code(500).send({
@@ -96,12 +96,10 @@ export class AUTH_CONTROLLER {
 
     static CURRENT_USER: RouteHandlerMethod = async (req, reply) => {
         const headers = req.headers;
-        const authoraztion = headers["Authorization"] as string;
+        const authoraztion = headers.authorization as string;
         // return reply.code(200).send({ message: "getting user accout", authoraztion });
 
         const token = authoraztion?.split(" ").pop() || "";
-
-        console.log("headaers", headers);
 
         try {
             if (!token) return reply.code(401).send({

@@ -8,8 +8,8 @@ export default class USER_SERVICE {
         return USER_REPO.getAll();
     }
 
-    static getById = (_id: any) => {
-        return USER_REPO.getById(_id).then((res: any) => res._doc);
+    static getById = async (_id: any) => {
+        return USER_REPO.getById(_id); // .then((res: any) => res._doc); // could add this option if the {doc: 1} is not set in the querry
     }
 
     static getByEmail = (email: string) => {

@@ -51,7 +51,7 @@ export default class REQ_NOT_FOUND_ERROS implements REQ_ERROS_INTFC {
     NOT_FOUND_UNDER_IDENTIFIER = (_identifier: "USER" | "VISITOR") => {
         if (this.identifier !== "URL") return "INVALID_IDENTIFIER";
 
-        if (_identifier !== "USER" || _identifier !== "VISITOR") return "INVALID_IDENTIFIER_ARGUMENT";
+        if (!["USER", "VISITOR"].includes(_identifier)) return "INVALID_IDENTIFIER_ARGUMENT";
 
         return `NO_URLS_FOUND_FOR_THIS_${_identifier}`;
     };

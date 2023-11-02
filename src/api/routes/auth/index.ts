@@ -17,6 +17,8 @@ const router: ROUTER = async (fastify, option) => {
     fastify.post("/create-account", AUTH_CONTROLLER.CREATE_USER_ACCOUNT);
 
     fastify.post("/login", AUTH_CONTROLLER.LOGIN);
+
+    fastify.post("/forgot-password", AUTH_CONTROLLER.FORGOT_PASSWORD);
 }
 
 export default router;

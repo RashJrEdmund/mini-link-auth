@@ -5,12 +5,12 @@ import { createObjectId, removeObjectKeys, validateEmail } from "../../../servic
 import { USER } from "../../../types";
 
 interface IAUTH_SIGNTOKEN {
-    (user: WithId<Document>): { token: string, user: USER }
+    (user: any): { token: string, user: USER }
 }
 
 export default class AUTH_SERVICE {
     static signUserToken: IAUTH_SIGNTOKEN = (user) => {
-        const token = TOKEN_SERVICE.sign(user);
+        const token = TOKEN_SERVICE.sign(user as WithId<USER>);
 
         console.log("auth sign token", user)
         return { token, user: user as any as USER }; // 😁
@@ -21,7 +21,7 @@ export default class AUTH_SERVICE {
     }
 
     static getCurrentUser = async (token: string) => {
-        const bearer = AUTH_SERVICE.verifyUserToken(token);
+        const bearer = await AUTH_SERVICE.verifyUserToken(token);
 
         // space for more
 
