@@ -15,7 +15,7 @@ const _tokenSchema = new Schema(
         },
         new_user_password: { // will only use these for a forgot-password request.
             type: String,
-            default: "", 
+            default: "",
         },
         confirmation_code: {
             type: String,
