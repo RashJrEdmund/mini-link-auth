@@ -1,29 +1,31 @@
 import USER_REPO from "./user.repo";
-import { createObjectId, validateEmail } from "../../../services/utils";
-import { USER } from "../../../types";
+import { USER } from "../../../types/entries";
 import { OptionalId } from "mongodb";
+import { createObjectId } from "../../../services/fxns";
 
 export default class USER_SERVICE {
     static getAllUsers = async () => {
         return USER_REPO.getAll();
     }
 
-    static getById = async (_id: any) => {
-        return USER_REPO.getById(_id); // .then((res: any) => res._doc); // could add this option if the {doc: 1} is not set in the querry
+    static getById = async (_id: string) => {
+        return USER_REPO.getById(_id).then((res: any) => res._doc);
     }
 
-    static getByEmail = (email: string) => {
-        return USER_REPO.getByEmail(email);
+    static getByEmail = async (email: string) => {
+        return USER_REPO.getByEmail(email).then((res: any) => {
+            return res?._doc || res; // res._doc appears when loging in and only res comes shows up when signingup.
+        });
     }
 
-    static createUser = (user: OptionalId<USER>) => {
+    static createUser = async (user: OptionalId<USER>) => {
         return USER_REPO.createUser(user);
     }
 
-    static editUser = async (_id: string, user: USER) => {
-        await USER_REPO.editUser(createObjectId(_id), user);
+    static updateUser = async (user_id: string, updates: any) => {
+        await USER_REPO.updateUser(user_id, updates);
 
-        return this.getById(_id);
+        return this.getById(user_id);
     }
 
     static delete = (_id: string) => {

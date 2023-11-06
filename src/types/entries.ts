@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 
-export type LINK_OBJ = {
+type LINK_OBJ = {
     _id?: string;
     user_id: string; // null for not logged in users
     visitor_id?: string,
@@ -12,7 +12,7 @@ export type LINK_OBJ = {
     createdAt?: string | number;
 };
 
-export type USER = {
+type USER = {
     _id?: ObjectId, // there's sposed to be a password field
     username: string,
     email: string,
@@ -23,7 +23,7 @@ export type USER = {
     updatedAt?: string,
 }
 
-export type VISITOR_OBJ = {
+type VISITOR_OBJ = {
     _id?: string, // normal _id from mongodb
     links?: LINK_OBJ[], // this is going to 
     visitor_id: string, // from fingerprintjs
@@ -31,4 +31,18 @@ export type VISITOR_OBJ = {
     user_id?: string | null, // just incase.
     createdAt: string,
     updatedAt?: string,
+}
+
+interface ITOKEN {
+    user_id: ObjectId,
+    token: string,
+    new_user_password?: string, // will only use this in case of a forgot password call
+    confirmation_code?: string, // will also only use this for a forgot password request
+}
+
+export type {
+    LINK_OBJ,
+    USER,
+    VISITOR_OBJ,
+    ITOKEN,
 }

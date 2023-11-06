@@ -1,5 +1,5 @@
 import { MongoClient } from "mongodb";
-import { MONGO_CONNECT_URL } from "../../src/services/contants";
+import { MONGO_CONNECT_URL } from "../../src/services/constants/constants";
 
 const client = new MongoClient(MONGO_CONNECT_URL as string);
 

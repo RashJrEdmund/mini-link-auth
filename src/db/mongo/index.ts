@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
-import { MONGO_CONNECT_URL } from "../../services/contants";
+import { config } from "../../config/config";
 
 mongoose
-    .connect(MONGO_CONNECT_URL as string)
+    .connect(config.mongodb.url)
     .then(() => console.log("mongoose connected \n"))
     .catch((error) => console.log("\nerror:", error.message));
 

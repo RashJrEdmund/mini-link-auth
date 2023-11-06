@@ -1,4 +1,4 @@
-import type { USER, VISITOR_OBJ } from "../../types";
+import type { USER, VISITOR_OBJ } from "../../types/entries";
 import type { INDENTIFIER, STR_FNC, _options } from ".";
 
 export interface REQ_ERROS_INTFC {
