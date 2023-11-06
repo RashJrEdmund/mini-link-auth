@@ -1,19 +1,16 @@
-import REQ_NOT_FOUND_ERROS from "../../../extra/REQ_ERROR";
-import { createFromBody } from "../../../extra/functions";
-import USER_SERVICE from "../user/user.service";
+import { validateEmail } from "../../../services/validation";
+import createReqFromBody from "../../../extra/createFromReqBody/createFromReqBody";
 import AUTH_SERVICE from "./auth.service";
 import { FastifyReply, FastifyRequest, RouteHandlerMethod } from "fastify";
 
-const ERR_MESSAGE = new REQ_NOT_FOUND_ERROS("USER");
-
-export class AUTH_CONTROLLER {
-    static CREATE_USER_ACCOUNT: RouteHandlerMethod = async (req, reply) => {
+export default class AUTH_CONTROLLER {
+    static CREATE_USER_ACCOUNT: RouteHandlerMethod = async (req: FastifyRequest, reply: FastifyReply) => { // method: POST
         const body = req.body;
 
         if (!body) return reply.code(404).send({
             status: 404,
             data: null,
-            message: ERR_MESSAGE.NOT_FOUND(),
+            message: "NOT FOUND",
         });
 
         try {
@@ -21,7 +18,7 @@ export class AUTH_CONTROLLER {
                 status: _status, // giving aliases to avoid naming conflicts below
                 new_user,
                 message: _message
-            } = createFromBody(body, { _type: "USER", _strict: true }); // strict mode is recomended for creation
+            } = createReqFromBody(body, { _type: "USER", _strict: true }); // strict mode is recomended for creation
 
             if (_status !== 200 || !new_user) return reply.code(_status).send({
                 status: _status,
@@ -37,50 +34,50 @@ export class AUTH_CONTROLLER {
                 data: null,
             });
 
-            const user_and_token = AUTH_SERVICE.signUserToken(user);
+            const user_and_token = AUTH_SERVICE.signUserToken(user); // an object containing the user and his token
 
             return reply.code(200).send({
                 status: 200,
                 data: { ...user_and_token },
-                message: 'SUCCESS',
+                message: 'ACCOUNT CREATED, VERIFICATION LINK SENT TO EMAIL',
             });
         } catch (er: any) {
             return reply.code(500).send({
                 status: 500,
                 data: null,
-                message: er?.body?.message ?? ERR_MESSAGE.AN_ERROR_OCCURED(),
+                message: "AN ERROR OCCURED",
             });
         }
     }
 
-    static LOGIN: RouteHandlerMethod = async (req, reply) => {
-        const body: any = req.body;
+    static LOGIN: RouteHandlerMethod = async (req: FastifyRequest, reply: FastifyReply) => { // method: POST
+        const body = req.body as { email: string, password: string };
 
         if (!body) return reply.code(404).send({
             status: 404,
             data: null,
-            message: ERR_MESSAGE.NOT_FOUND(),
+            message: "NOT FOUND",
         });
 
         try {
             const email = body.email;
-            const password = body.password;
+            const password = body.password; // the front end ensures passwords do match 😇
 
-            if (!email || !password)return reply.code(404).send({
-                status: 404,
+            if (!email || !password) return reply.code(400).send({
+                status: 400,
+                message: "MISSING DETAILS",
                 data: null,
-                message: ERR_MESSAGE.MISSING_DETAILS()
             });
 
             const user_and_token = await AUTH_SERVICE.loginWithEmailPassword(email, password);
 
-            if (!user_and_token) return reply.code(401).send({
-                status: 401,
+            if (!user_and_token || !user_and_token.user) return reply.code(404).send({
+                status: 404,
+                message: "WRONG EMAIL OR PASSWORD",
                 data: null,
-                message: REQ_NOT_FOUND_ERROS.INCORRECT_EMAIL_OR_PASSWORD(),
             });
 
-            return reply.code(404).send({
+            return reply.code(200).send({
                 status: 200,
                 data: { ...user_and_token },
                 message: 'USER LOGGED IN',
@@ -89,23 +86,22 @@ export class AUTH_CONTROLLER {
             return reply.code(500).send({
                 status: 500,
                 data: null,
-                message: er?.body?.message ?? ERR_MESSAGE.AN_ERROR_OCCURED(),
+                message: "AN ERROR OCCURED",
             });
         }
     }
 
-    static CURRENT_USER: RouteHandlerMethod = async (req, reply) => {
-        const headers = req.headers;
-        const authoraztion = headers.authorization as string;
-        // return reply.code(200).send({ message: "getting user accout", authoraztion });
-
-        const token = authoraztion?.split(" ").pop() || "";
-
+    static GET_CURRENT_LOGGEDIN_USER = async (req: FastifyRequest, reply: FastifyReply) => {
         try {
-            if (!token) return reply.code(401).send({
-                status: 401,
+            const authoraztion = req.headers.authorization as any as string;
+            // return reply.code(200).send({ message: "getting user accout", authoraztion });
+
+            const token = authoraztion?.split(" ").pop() || "";// to give the auth token passed to Authorization: "Beare <token_string>";
+
+            if (!token) return reply.code(400).send({
+                status: 400,
                 data: null,
-                message: REQ_NOT_FOUND_ERROS.MISSING_TOKEN(),
+                message: "MISSING TOKEN",
             });
 
             const current_user = await AUTH_SERVICE.getCurrentUser(token);
@@ -113,24 +109,150 @@ export class AUTH_CONTROLLER {
             if (!current_user) return reply.code(401).send({
                 status: 401,
                 data: null,
-                message: REQ_NOT_FOUND_ERROS.BEAER_NOT_FOUND(),
+                message: "USER IS UNAUTHORIZED",
             });
 
             return reply.code(200).send({
                 status: 200,
-                data: { user: current_user },
-                message: 'SUCCESS',
+                data: { user: { ...(current_user as any) } },
+                message: 'USER RETRIEVED SUCCESFULLY',
             });
         } catch (er: any) {
             return reply.code(500).send({
                 status: 500,
                 data: null,
-                message: er?.body?.message ?? ERR_MESSAGE.AN_ERROR_OCCURED(),
+                message: "AN ERROR OCCURED",
             });
         }
     }
 
-    static FORGOT_PASSWORD: RouteHandlerMethod = async (req: FastifyRequest, reply: FastifyReply)  => {
-        return reply.code(200).send("retrieving account"); // continue reading https://blog.logrocket.com/implementing-secure-password-reset-node-js/
+    static VERIFY_ACCOUNT: RouteHandlerMethod = async (req: FastifyRequest, reply: FastifyReply) => { // method: GET
+        try {
+            const { params, query } = req as {
+                params: {
+                    user_id: string,
+                }, query: {
+                    token: string,
+                }
+            }
+            const user_id = params.user_id;
+            const token = query.token;
+
+            if (!user_id || !token) return reply.code(400).send({
+                status: 400,
+                data: null,
+                message: "INVALID REQUEST URL",
+            });
+
+            const { status, message } = await AUTH_SERVICE.verifyUserAccount(user_id, token);
+
+            if (status !== 200) return reply.code(status).send({
+                status: status,
+                data: null,
+                message: message,
+            });
+
+            return reply.code(200).send({
+                status: 200,
+                data: null,
+                message: "ACCOUNT VERIFIED 🥳",
+            });
+        } catch (er: any) {
+            return reply.code(500).send({
+                status: 500,
+                data: null,
+                message: "AN ERROR OCCURED",
+            });
+        }
+    }
+
+    static RESEND_VERIFICATION_TOKEN: RouteHandlerMethod = async (req: FastifyRequest, reply: FastifyReply) => { // method: POST   
+        try {
+            const { user_id, email } = req.body as { user_id: string, email: string };
+
+            if (!user_id || !email || !validateEmail(email)) return reply.code(400).send({
+                status: 400,
+                data: null,
+                message: "MISSING DETAILS",
+            });
+
+            await AUTH_SERVICE.createTokenAndSendVerification(user_id, email);
+
+            return reply.code(200).send({
+                status: 200,
+                data: null,
+                message: 'REVERIFICATION URL SENT TO: ' + email,
+            });
+        } catch (er: any) {
+            return reply.code(500).send({
+                status: 500,
+                data: null,
+                message: "AN ERROR OCCURED",
+            });
+        }
+    }
+
+    static FORGOT_PASSWORD: RouteHandlerMethod = async (req: FastifyRequest, reply: FastifyReply) => { // method: POST
+        try {
+            const { email, new_password } = req.body as { email: string, new_password: string };
+
+            if (!email || !new_password) return reply.code(401).send({
+                status: 401,
+                data: null,
+                message: "MISSING FIELDS",
+            });
+
+            const { status, message } = await AUTH_SERVICE.forgotPassword(email, new_password);
+
+            if (status !== 200) return reply.code(status).send({
+                status: status,
+                data: null,
+                message: message,
+            });
+
+            return reply.code(200).send({
+                status: 200,
+                data: null,
+                message: "PASSWORD RESET CODE SENT TO: " + email,
+            });
+        } catch (er: any) {
+            return reply.code(500).send({
+                status: 500,
+                data: null,
+                message: "AN ERROR OCCURED",
+            });
+        }
+    }
+
+    static RESET_PASSWORD: RouteHandlerMethod = async (req: FastifyRequest, reply: FastifyReply) => { // method: POST
+        try {
+            const { email, confirmation_code } = req.body as { email: string, confirmation_code: string };
+
+            if (!email || !confirmation_code) return reply.code(401).send({
+                status: 401,
+                data: null,
+                message: "MISSING FIELDS",
+            });
+
+            const { status, message } = await AUTH_SERVICE.resetPassword(email, confirmation_code);
+
+            if (status !== 200) return reply.code(status).send({
+                status: status,
+                data: null,
+                message: message,
+            });
+
+            return reply.code(200).send({
+                status: 200,
+                data: null,
+                message: "PASSWORD RESETED 🙂",
+            });
+        } catch (er: any) {
+            return reply.code(500).send({
+                status: 500,
+                data: null,
+                message: "AN ERROR OCCURED",
+            });
+        }
     }
 }

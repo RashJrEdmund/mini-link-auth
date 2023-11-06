@@ -1,14 +1,14 @@
 import { USERS } from "../../../db/schemas";
 import type { ObjectId, OptionalId } from "mongodb";
-import { USER } from "../../../types";
+import { USER } from "../../../types/entries";
 
 export default class USER_REPO {
     static getAll = () => {
         return USERS.find({});
     }
 
-    static getById = (_id: ObjectId) => {
-        return USERS.findById(_id, { _doc: 1 }); // mongo _id has type ObjectId
+    static getById = (_id: string) => {
+        return USERS.findById(_id); // mongo _id has type ObjectId
     }
 
     static getByEmail = (email: string) => {
@@ -19,8 +19,8 @@ export default class USER_REPO {
         return USERS.create(user);
     }
 
-    static editUser = (_id: ObjectId, updates: any) => {
-        return USERS.findOneAndUpdate({ _id }, { $set: { ...updates } });
+    static updateUser = (_id: string, updates: any) => {
+        return USERS.findOneAndUpdate({ _id }, { $set: { ...updates } })
     }
 
     static delete = (_id: ObjectId) => {

@@ -1,4 +1,4 @@
-import type { USER, VISITOR_OBJ } from "../../types";
+import type { USER, VISITOR_OBJ } from "../../types/entries";
 import type { REQ_ERROS_INTFC } from "./REQ_ERROS_INTFC";
 
 export type INDENTIFIER = "USER" | "URL" | "VISITOR"

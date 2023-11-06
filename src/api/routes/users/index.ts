@@ -1,10 +1,9 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { ROUTER } from "../../../types/fastify";
+import USER_CONTROLLER from "../../modules/user/user.controller";
 
 const router: ROUTER = async (fastify: FastifyInstance, options) => {
-    fastify.get("/", (_, reply: FastifyReply) => {
-        reply.send("getting all users");
-    });
+    fastify.get("/", USER_CONTROLLER.GET_ALL_USERS);
 
     fastify.get("/:_d", (req: FastifyRequest, reply: FastifyReply) => {
         const { _d } = req.params as { _d: string };

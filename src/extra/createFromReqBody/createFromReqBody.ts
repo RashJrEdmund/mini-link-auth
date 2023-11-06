@@ -1,5 +1,5 @@
-import type { LINK_OBJ, USER, VISITOR_OBJ } from "../types";
-import REQ_NOT_FOUND_ERROS from "./REQ_ERROR";
+import type { LINK_OBJ, USER, VISITOR_OBJ } from "../../types/entries";
+import REQ_NOT_FOUND_ERROS from "../REQ_ERROR";
 // import { MIN_VISITOR_CHANCES } from "../../utils/constants";
 
 type CREATE_FROM_BODY = (body: any, options: {
@@ -13,7 +13,7 @@ type CREATE_FROM_BODY = (body: any, options: {
     new_visitor?: VISITOR_OBJ
 };
 
-export const createFromBody: CREATE_FROM_BODY = (body, options) => {
+const createReqFromBody: CREATE_FROM_BODY = (body, options) => {
     if (options._type === "USER") {
         const ERR_MESSAGE = new REQ_NOT_FOUND_ERROS("USER");
 
@@ -171,3 +171,5 @@ export const createFromBody: CREATE_FROM_BODY = (body, options) => {
         message: new REQ_NOT_FOUND_ERROS("USER").UNRECOGNIZED_ENTITY(),
     };
 }
+
+export default createReqFromBody;

@@ -1,5 +1,5 @@
 import fastify from "fastify";
-import { HOST, PORT } from "./services/contants"
+import { config } from "./config/config";
 import custom_logger from "./extra/custom_logger";
 import registerRoutes from "./fastify/registerRoutes";
 
@@ -8,7 +8,12 @@ try {
 
     registerRoutes(server); // where routes have been registered and prefixed;
 
-    server.listen({ host: HOST, port: PORT }, (err, address) => {
+    const { deploy: {
+        host,
+        port
+    } } = config;
+
+    server.listen({ host: host, port: port }, (err, address) => {
         if (err) {
             server.log.error(err);
             process.exit(1);

@@ -1,8 +1,10 @@
-import { BCRYPT, TOKEN_SERVICE } from "../../../extra/validation";
-import type { WithId } from "mongodb";
+import { BCRYPT, TOKEN_SERVICE, validateEmail } from "../../../services/validation";
 import USER_SERVICE from "../user/user.service";
-import { createObjectId, removeObjectKeys, validateEmail } from "../../../services/utils";
-import { USER } from "../../../types";
+import { USER } from "../../../types/entries";
+import USER_TOKEN_SERVICE from "../token/token.service";
+import { API_BASE_URL } from "../../../services/constants/constants";
+import sendEmail from "../../../services/sendEmail";
+import { createObjectId } from "../../../services/fxns";
 
 interface IAUTH_SIGNTOKEN {
     (user: any): { token: string, user: USER }
@@ -10,9 +12,8 @@ interface IAUTH_SIGNTOKEN {
 
 export default class AUTH_SERVICE {
     static signUserToken: IAUTH_SIGNTOKEN = (user) => {
-        const token = TOKEN_SERVICE.sign(user as WithId<USER>);
+        const token = TOKEN_SERVICE.sign({ ...user });
 
-        console.log("auth sign token", user)
         return { token, user: user as any as USER }; // 😁
     }
 
@@ -20,14 +21,120 @@ export default class AUTH_SERVICE {
         return TOKEN_SERVICE.verify(token); // returns the token bearer will be needed to get the currently logged in user
     }
 
+    static createTokenAndSendVerification = async (user_id: string, email: string) => {
+        return USER_TOKEN_SERVICE
+            .createUserToken(createObjectId(user_id))
+            .then(new_token => {
+                sendEmail.verifyEmail({
+                    url: `${API_BASE_URL}/auth/verify/${user_id.toString()}/?token=${new_token?.token}`,
+                    to: [email]
+                });
+            });
+    }
+
     static getCurrentUser = async (token: string) => {
         const bearer = await AUTH_SERVICE.verifyUserToken(token);
 
-        // space for more
-
-        console.log({ bearer });
-
         return bearer;
+    }
+
+    static verifyUserAccount = async (user_id: string, token: string) => {
+        try {
+            const prev_token = await USER_TOKEN_SERVICE.getPrevToken(user_id, token);
+
+            if (!prev_token) return {
+                status: 404,
+                data: null,
+                message: "INVALID LINK OR TOKEN EXPIRED"
+            };
+
+            await USER_SERVICE.updateUser(user_id, { verified: true });
+
+            await USER_SERVICE.getById(user_id);
+
+            USER_TOKEN_SERVICE.deleteByToken(token); // removing token from database
+
+            return {
+                status: 200,
+                data: null,
+                message: "ACCOUNT VERIFIED 🥳"
+            }
+        } catch (error) {
+            return {
+                status: 500,
+                data: null,
+                message: "AN ERROR OCCURED"
+            };
+        }
+    }
+
+    static forgotPassword = async (email: string, new_password: string) => {
+        if (!email || !validateEmail(email) || !new_password) return {
+            status: 400,
+            data: null,
+            message: "MISSING DETAILS"
+        };
+
+        const user = await USER_SERVICE.getByEmail(email);
+
+        if (!user) return {
+            status: 404,
+            data: null,
+            message: "USER ACCOUNT NOT FOUND"
+        };
+
+        await USER_TOKEN_SERVICE
+            .createForgotPassToken(user._id, new_password)
+            .then(reset_token => {
+                sendEmail.resetPassword({
+                    to: [email],
+                    confirmation_code: reset_token?.confirmation_code || "", // sending confirmation code to user
+                });
+            });
+
+        return {
+            status: 200,
+            data: null,
+            message: "PASSWORD RESET CODE SENT TO EMAIL"
+        };
+    }
+
+    static resetPassword = async (email: string, confirmation_code: string) => {
+        if (!email || !validateEmail(email) || !confirmation_code) return {
+            status: 400,
+            data: null,
+            message: "MISSING DETAILS"
+        };
+
+        const user = await USER_SERVICE.getByEmail(email);
+
+        if (!user) return {
+            status: 404,
+            data: null,
+            message: "USER ACCOUNT NOT FOUND"
+        };
+
+        const token = await USER_TOKEN_SERVICE.getTokenByUserIdAndConfrimationCode(user._id, confirmation_code);
+
+        if (!token) return {
+            status: 404,
+            data: null,
+            message: "INVALID CONFIRMATION OR TOKEN EXPIRED"
+        };
+
+        // reseting user password and storing the hash;
+
+        const password_hash = await BCRYPT.hash(token.new_user_password);
+
+        const update = await USER_SERVICE.updateUser(user._id.toString(), { password: password_hash });
+
+        USER_TOKEN_SERVICE.deleteToken(token._id); // clearing token from database
+
+        return {
+            status: 200,
+            data: { update, token }, // not being sent by the controller
+            message: "PASSWORD RESETED"
+        };
     }
 
     static loginWithEmailPassword = async (email: string, password: string) => {
@@ -39,7 +146,7 @@ export default class AUTH_SERVICE {
 
         if (!match) return null // will also handle as line 22;
 
-        return this.signUserToken(prev_user as any);
+        return this.signUserToken(prev_user as USER);
     }
 
     static signUp = async (user: USER) => {
@@ -55,7 +162,7 @@ export default class AUTH_SERVICE {
             const prev_user = await USER_SERVICE.getByEmail(email);
 
             if (prev_user) return {
-                status: 401,
+                status: 409,
                 data: null,
                 message: "USER ALREADY EXITS",
             };
@@ -72,6 +179,8 @@ export default class AUTH_SERVICE {
 
             const new_user = await USER_SERVICE.getById(_id.toString());
 
+            this.createTokenAndSendVerification(_id.toString(), email);
+
             return {
                 status: 200,
                 data: { ...new_user },
@@ -81,4 +190,4 @@ export default class AUTH_SERVICE {
             throw er
         }
     }
-}
+};
