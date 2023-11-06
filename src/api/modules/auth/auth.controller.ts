@@ -48,7 +48,7 @@ export class AUTH_CONTROLLER {
             return reply.code(500).send({
                 status: 500,
                 data: null,
-                message: er?.body?.message ?? ERR_MESSAGE.AN_ERROR_OCCURED(),
+                message: ERR_MESSAGE.AN_ERROR_OCCURED(),
             });
         }
     }
@@ -89,7 +89,7 @@ export class AUTH_CONTROLLER {
             return reply.code(500).send({
                 status: 500,
                 data: null,
-                message: er?.body?.message ?? ERR_MESSAGE.AN_ERROR_OCCURED(),
+                message: ERR_MESSAGE.AN_ERROR_OCCURED(),
             });
         }
     }
@@ -125,7 +125,7 @@ export class AUTH_CONTROLLER {
             return reply.code(500).send({
                 status: 500,
                 data: null,
-                message: er?.body?.message ?? ERR_MESSAGE.AN_ERROR_OCCURED(),
+                message: ERR_MESSAGE.AN_ERROR_OCCURED(),
             });
         }
     }
